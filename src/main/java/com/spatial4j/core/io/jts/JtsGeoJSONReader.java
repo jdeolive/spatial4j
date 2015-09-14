@@ -13,6 +13,7 @@ import com.spatial4j.core.context.jts.JtsSpatialContext;
 import com.spatial4j.core.io.GeoJSONReader;
 import com.spatial4j.core.shape.Shape;
 import com.vividsolutions.jts.geom.*;
+import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.impl.PackedCoordinateSequenceFactory;
 import org.noggit.JSONParser;
 
@@ -107,6 +108,16 @@ public class JtsGeoJSONReader extends GeoJSONReader {
     CoordinateSequence seq =
         factory.getCoordinateSequenceFactory()
             .create(coords.toArray(new Coordinate[coords.size()]));
+
+    Double buf = readLineStringBuffer(parser);
+    if (buf != null) {
+      List<com.spatial4j.core.shape.Point> points = new ArrayList<>(coords.size());
+      for (Coordinate c : coords) {
+        points.add(ctx.makePoint(c.x, c.y));
+      }
+      return ctx.makeBufferedLineString(points, buf);
+    }
+
     LineString geo = ctx.getGeometryFactory().createLineString(seq);
     return ctx.makeShape(geo);
   }

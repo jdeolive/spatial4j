@@ -188,9 +188,36 @@ public class GeoJSONReader implements ShapeReader {
     for (double[] coord : coords) {
       points.add(ctx.makePoint(coord[0], coord[1]));
     }
-    Shape out = ctx.makeLineString(points);
+
+    // check for buffer field
+    Double buf = readBuffer(parser);
+
+    Shape out = buf == null ? ctx.makeLineString(points) : ctx.makeBufferedLineString(points, buf);
     readUntilEvent(parser, JSONParser.OBJECT_END);
     return out;
+  }
+
+  /**
+   * Helper method to read up until a "buffer" property is found. 
+   * <p>
+   * If no buffer property exists <tt>null</tt> is returned. 
+   * </p>
+   */
+  protected Double readBuffer(JSONParser parser) throws IOException {
+    int event = parser.lastEvent();
+    String key = null;
+    while (event != JSONParser.OBJECT_END && event != JSONParser.EOF) {
+      if (parser.wasKey()) {
+        key = parser.getString();
+      }
+      else if (event == JSONParser.NUMBER || event == JSONParser.LONG){
+        if (key != null && "buffer".equals(key)) {
+          return parser.getDouble();
+        }
+      }
+      event = parser.nextEvent();
+    }
+    return null;
   }
 
   protected Circle readCircle(JSONParser parser) throws IOException, ParseException {
